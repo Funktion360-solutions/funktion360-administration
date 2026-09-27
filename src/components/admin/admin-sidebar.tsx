@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { adminNavigation } from "@/lib/navigation/admin-navigation";
+import { LogoutButton } from "@/components/admin/logout-button";
 
 type AdminSidebarProps = {
   staff: {
@@ -83,6 +84,8 @@ export function AdminSidebar({
               </p>
             </div>
           </div>
+
+          <LogoutButton />
         </div>
       </div>
     </aside>
