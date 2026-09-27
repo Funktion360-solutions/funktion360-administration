@@ -3,9 +3,28 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-import { runAdministrationHealthCheck } from "@/app/actions/systems";
+import {
+  runAdministrationHealthCheck,
+  runFavn360HealthCheck,
+  runSupabaseHealthCheck,
+  runVercelHealthCheck,
+} from "@/app/actions/systems";
 
-export function RunHealthCheckButton() {
+type HealthSystem =
+  | "funktion360-administration"
+  | "favn360"
+  | "supabase"
+  | "vercel";
+
+type Props = {
+  system: HealthSystem;
+  label?: string;
+};
+
+export function RunHealthCheckButton({
+  system,
+  label = "Kør health check",
+}: Props) {
   const router = useRouter();
 
   const [running, setRunning] = useState(false);
@@ -20,7 +39,14 @@ export function RunHealthCheckButton() {
     setIsError(false);
 
     try {
-      const result = await runAdministrationHealthCheck();
+      const result =
+        system === "favn360"
+          ? await runFavn360HealthCheck()
+          : system === "supabase"
+            ? await runSupabaseHealthCheck()
+            : system === "vercel"
+              ? await runVercelHealthCheck()
+              : await runAdministrationHealthCheck();
 
       setMessage(
         result.status === "operational"
@@ -51,7 +77,7 @@ export function RunHealthCheckButton() {
         disabled={running}
         className="rounded-xl bg-[#202120] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-black disabled:cursor-not-allowed disabled:opacity-50"
       >
-        {running ? "Kontrollerer…" : "Kør health check"}
+        {running ? "Kontrollerer…" : label}
       </button>
 
       {message ? (

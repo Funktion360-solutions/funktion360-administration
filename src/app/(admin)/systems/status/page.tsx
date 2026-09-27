@@ -159,7 +159,27 @@ export default async function SystemStatusPage() {
           </p>
         </div>
 
-        <RunHealthCheckButton />
+        <div className="flex flex-wrap items-start justify-end gap-2">
+          <RunHealthCheckButton
+            system="funktion360-administration"
+            label="Kontrollér Administration"
+          />
+
+          <RunHealthCheckButton
+            system="favn360"
+            label="Kontrollér Favn360"
+          />
+
+          <RunHealthCheckButton
+            system="supabase"
+            label="Kontrollér Supabase"
+          />
+
+          <RunHealthCheckButton
+            system="vercel"
+            label="Kontrollér Vercel"
+          />
+        </div>
       </div>
 
       {error ? (
