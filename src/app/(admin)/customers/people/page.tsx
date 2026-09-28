@@ -1,8 +1,5 @@
-import {
-  createPerson,
-  deletePerson,
-  updatePerson,
-} from "@/app/actions/people";
+import Link from "next/link";
+import { createPerson } from "@/app/actions/people";
 import { createClient } from "@/lib/supabase/server";
 
 type CrmPerson = {
@@ -15,20 +12,28 @@ type CrmPerson = {
   created_at: string;
 };
 
+const statusLabels: Record<string, string> = {
+  active: "Aktiv",
+  inactive: "Inaktiv",
+  lead: "Lead",
+  prospect: "Prospect",
+  customer: "Kunde",
+};
+
 export default async function PeoplePage() {
   const supabase = await createClient();
 
-  const { data: people, error } = await supabase.rpc(
-    "list_crm_people"
-  );
+  const { data, error } = await supabase.rpc("list_crm_people");
 
   if (error) {
     throw new Error(`People query failed: ${error.message}`);
   }
 
+  const people = (data ?? []) as CrmPerson[];
+
   return (
     <div className="space-y-8">
-      <div className="flex items-end justify-between gap-6">
+      <div className="flex flex-wrap items-end justify-between gap-6">
         <div>
           <p className="font-mono text-xs uppercase tracking-[0.18em] text-black/45">
             Kunder
@@ -39,20 +44,24 @@ export default async function PeoplePage() {
           </h1>
 
           <p className="mt-2 text-sm text-black/55">
-            Administrér personer på tværs af Funktion360s produkter
-            og kunderelationer.
+            Centralt personregister på tværs af Funktion360s produkter,
+            systemer og kunderelationer.
           </p>
         </div>
 
         <div className="rounded-full border border-black/10 bg-white px-4 py-2 text-sm">
-          <strong>{people?.length ?? 0}</strong>
+          <strong>{people.length}</strong>
           <span className="ml-2 text-black/45">personer</span>
         </div>
       </div>
 
       <section className="rounded-2xl border border-black/10 bg-white p-6">
         <div className="mb-6">
-          <h2 className="text-lg font-semibold">
+          <p className="font-mono text-xs uppercase tracking-[0.16em] text-black/40">
+            CRM
+          </p>
+
+          <h2 className="mt-2 text-lg font-semibold">
             Opret person
           </h2>
 
@@ -102,96 +111,80 @@ export default async function PeoplePage() {
       </section>
 
       <section className="overflow-hidden rounded-2xl border border-black/10 bg-white">
-        <div className="border-b border-black/10 px-6 py-5">
-          <h2 className="text-lg font-semibold">
-            CRM-personer
-          </h2>
+        <div className="flex items-center justify-between border-b border-black/10 px-6 py-5">
+          <div>
+            <p className="font-mono text-xs uppercase tracking-[0.16em] text-black/40">
+              Personregister
+            </p>
+
+            <h2 className="mt-2 text-lg font-semibold">
+              CRM-personer
+            </h2>
+          </div>
+
+          <span className="text-xs text-black/40">
+            Vælg en person for at åbne den samlede profil
+          </span>
         </div>
 
-        {people && people.length > 0 ? (
+        {people.length > 0 ? (
           <div className="divide-y divide-black/10">
-            {people.map((person: CrmPerson) => (
-              <div
-                key={person.id}
-                className="p-6"
-              >
-                <form
-                  action={updatePerson}
-                  className="grid gap-3 lg:grid-cols-[1fr_1fr_1.4fr_1fr_auto]"
+            {people.map((person) => {
+              const fullName =
+                [person.first_name, person.last_name]
+                  .filter(Boolean)
+                  .join(" ") ||
+                person.primary_email ||
+                "Unavngiven person";
+
+              return (
+                <Link
+                  key={person.id}
+                  href={`/customers/people/${person.id}`}
+                  className="group grid gap-4 px-6 py-5 transition hover:bg-black/[0.02] md:grid-cols-[1.2fr_1.4fr_1fr_auto] md:items-center"
                 >
-                  <input
-                    type="hidden"
-                    name="id"
-                    value={person.id}
-                  />
+                  <div>
+                    <p className="text-sm font-semibold">
+                      {fullName}
+                    </p>
 
-                  <input
-                    name="first_name"
-                    defaultValue={person.first_name ?? ""}
-                    required
-                    aria-label="Fornavn"
-                    className="rounded-lg border border-black/10 px-3 py-2 text-sm"
-                  />
-
-                  <input
-                    name="last_name"
-                    defaultValue={person.last_name ?? ""}
-                    aria-label="Efternavn"
-                    className="rounded-lg border border-black/10 px-3 py-2 text-sm"
-                  />
-
-                  <input
-                    name="email"
-                    type="email"
-                    defaultValue={person.primary_email ?? ""}
-                    aria-label="E-mail"
-                    className="rounded-lg border border-black/10 px-3 py-2 text-sm"
-                  />
-
-                  <input
-                    name="phone"
-                    type="tel"
-                    defaultValue={person.phone ?? ""}
-                    aria-label="Telefon"
-                    className="rounded-lg border border-black/10 px-3 py-2 text-sm"
-                  />
-
-                  <button
-                    type="submit"
-                    className="rounded-lg border border-black/10 px-4 py-2 text-sm font-medium transition hover:bg-black/[0.04]"
-                  >
-                    Gem
-                  </button>
-                </form>
-
-                <div className="mt-3 flex items-center justify-between gap-4">
-                  <div className="flex items-center gap-3">
-                    <span className="rounded-full bg-[#cfff69] px-2.5 py-1 font-mono text-[10px] uppercase tracking-wide">
-                      {person.status}
-                    </span>
-
-                    <span className="font-mono text-[10px] text-black/35">
+                    <p className="mt-1 font-mono text-[10px] text-black/30">
                       {person.id}
-                    </span>
+                    </p>
                   </div>
 
-                  <form action={deletePerson}>
-                    <input
-                      type="hidden"
-                      name="id"
-                      value={person.id}
-                    />
+                  <div>
+                    <p className="text-xs text-black/40">
+                      E-mail
+                    </p>
 
-                    <button
-                      type="submit"
-                      className="text-xs font-medium text-red-700 transition hover:text-red-900"
-                    >
-                      Slet person
-                    </button>
-                  </form>
-                </div>
-              </div>
-            ))}
+                    <p className="mt-1 truncate text-sm">
+                      {person.primary_email ?? "—"}
+                    </p>
+                  </div>
+
+                  <div>
+                    <p className="text-xs text-black/40">
+                      Telefon
+                    </p>
+
+                    <p className="mt-1 text-sm">
+                      {person.phone ?? "—"}
+                    </p>
+                  </div>
+
+                  <div className="flex items-center justify-between gap-4 md:justify-end">
+                    <span className="rounded-full bg-[#cfff69]/60 px-2.5 py-1 font-mono text-[10px] uppercase tracking-wide">
+                      {statusLabels[person.status] ?? person.status}
+                    </span>
+
+                    <span className="text-lg text-black/25 transition group-hover:translate-x-1 group-hover:text-black">
+                      →
+                    </span>
+                  </div>
+                </Link>
+              );
+            })}
           </div>
         ) : (
           <div className="p-10 text-center text-sm text-black/45">
