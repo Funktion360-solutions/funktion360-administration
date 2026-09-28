@@ -1,3 +1,5 @@
+import { RunFavn360SyncButton } from "./RunFavn360SyncButton";
+
 import { requirePermission } from "@/lib/auth/require-permission";
 import { createClient } from "@/lib/supabase/server";
 
@@ -114,19 +116,23 @@ export default async function SyncPage() {
 
   return (
     <div className="mx-auto w-full max-w-[1500px]">
-      <div className="border-b border-black/10 pb-7">
-        <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.18em] text-black/40">
-          Drift
-        </p>
+      <div className="flex flex-col gap-5 border-b border-black/10 pb-7 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.18em] text-black/40">
+            Drift
+          </p>
 
-        <h1 className="mt-2 text-3xl font-semibold tracking-[-0.035em] text-[#202120]">
-          Synkronisering
-        </h1>
+          <h1 className="mt-2 text-3xl font-semibold tracking-[-0.035em] text-[#202120]">
+            Synkronisering
+          </h1>
 
-        <p className="mt-2 max-w-2xl text-sm leading-6 text-black/55">
-          Overvåg synkroniseringer mellem Funktion360
-          Administration og tilknyttede systemer.
-        </p>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-black/55">
+            Overvåg synkroniseringer mellem Funktion360
+            Administration og tilknyttede systemer.
+          </p>
+        </div>
+
+        <RunFavn360SyncButton />
       </div>
 
       {error ? (

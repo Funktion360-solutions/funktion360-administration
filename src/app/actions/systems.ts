@@ -99,3 +99,33 @@ export async function runFavn360HealthCheck() {
 
   return result;
 }
+
+export async function runFavn360IdentitySync() {
+  const staff = await requirePermission("systems.sync");
+
+  const supabase = await createClient();
+
+  const { error: aalError } = await supabase.rpc(
+    "require_crm_critical_action_aal2"
+  );
+
+  if (aalError) {
+    throw new Error(
+      `AAL2 verification required: ${aalError.message}`
+    );
+  }
+
+  const { syncFavn360Identities } = await import(
+    "@/lib/operations/favn360-sync"
+  );
+
+  const result = await syncFavn360Identities({
+    triggerType: "manual",
+    triggeredByStaffUserId: staff.staff_user_id,
+  });
+
+  revalidatePath("/systems/sync");
+  revalidatePath("/systems/integrations");
+
+  return result;
+}
