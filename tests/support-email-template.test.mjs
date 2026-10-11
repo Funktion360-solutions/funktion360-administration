@@ -33,3 +33,14 @@ test("mail template preserves paragraphs and escapes untrusted markup", () => {
     exports.renderSupportEmail("Emne", "Tekst"),
   );
 });
+test("uses the supplied case number in header and footer independently of subject", () => {
+  const html = exports.renderSupportEmail("Spørgsmål", "Hej", "SUP-001002");
+  assert.ok(html.includes("SUPPORT-ID"));
+  assert.ok(html.includes("Support-ID:"));
+  assert.equal(html.split("SUP-001002").length - 1, 2);
+  assert.ok(
+    exports
+      .renderSupportEmail("Test", "Body", "<script>")
+      .includes("&lt;script&gt;"),
+  );
+});

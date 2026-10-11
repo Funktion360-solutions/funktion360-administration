@@ -1,7 +1,13 @@
 "use client";
 import { useDeferredValue, useState } from "react";
 import { renderSupportEmail } from "@/lib/support/email-template";
-export function MailEditor({ initialSubject }: { initialSubject: string }) {
+export function MailEditor({
+  initialSubject,
+  supportId,
+}: {
+  initialSubject: string;
+  supportId: string;
+}) {
   const [subject, setSubject] = useState(initialSubject);
   const [body, setBody] = useState("");
   const [preview, setPreview] = useState(false);
@@ -55,6 +61,7 @@ export function MailEditor({ initialSubject }: { initialSubject: string }) {
             srcDoc={renderSupportEmail(
               previewSubject || "Dit emne",
               previewBody || "Din besked vises her.",
+              supportId,
             )}
           />
         </section>

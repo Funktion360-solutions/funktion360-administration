@@ -62,6 +62,16 @@ export async function sendMail(form: FormData) {
   const path = `/support/tickets/${id}`;
   if (!mailConfigured()) redirect(`${path}?notice=config`);
   const retry = value(form, "retry") === "yes";
+  let supportNumber: string | undefined;
+  if (!retry) {
+    const current = await db.rpc("get_crm_support_case", {
+      target_support_case_id: id,
+    });
+    const ticket = current.data?.[0];
+    if (current.error || !ticket || typeof ticket.case_number !== "string")
+      redirect(`${path}?notice=prepare-error`);
+    supportNumber = ticket.case_number;
+  }
   const recipient = value(form, "recipient"),
     subject = value(form, "subject"),
     body = value(form, "body");
@@ -94,7 +104,9 @@ export async function sendMail(form: FormData) {
       recipient,
       subject,
       body,
-      ...(!retry ? { html_body: renderSupportEmail(subject, body) } : {}),
+      ...(!retry
+        ? { html_body: renderSupportEmail(subject, body, supportNumber) }
+        : {}),
       sender: process.env.SUPPORT_MAIL_FROM,
       reply_to: replyTo,
     },
@@ -102,6 +114,7 @@ export async function sendMail(form: FormData) {
   if (error || !data) redirect(`${path}?notice=prepare-error`);
   const email = data as OutboxEmail;
   if (email.support_case_id !== id) redirect(`${path}?notice=prepare-error`);
+  if (!retry && !email.html_body) redirect(`${path}?notice=template-error`);
   let notice = "accepted";
   if (email.status !== "accepted") {
     try {

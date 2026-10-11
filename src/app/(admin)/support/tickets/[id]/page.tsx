@@ -26,6 +26,8 @@ const notices: Record<string, string> = {
   uncertain:
     "Afsendelsen kunne ikke bekræftes. Brug Kontrollér / prøv igen på den samme mail nedenfor. Opret ikke en ny kopi.",
   config: "Mailopsætningen mangler.",
+  "template-error":
+    "Mailen blev ikke sendt, fordi HTML-skabelonen mangler. Kontrollér at den nyeste deployment og mailmigration er aktive.",
   invalid: "Kontrollér modtager, emne og tekst.",
   "prepare-error":
     "Mailen kunne ikke klargøres. Et genforsøg kan være udløbet eller mangle rettigheder.",
@@ -226,6 +228,7 @@ export default async function TicketPage({
                   />
                 </label>
                 <MailEditor
+                  supportId={ticket.case_number}
                   initialSubject={`[${ticket.case_number}] ${ticket.subject}`.slice(
                     0,
                     200,

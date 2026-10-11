@@ -52,3 +52,14 @@ Efter deployment: send en testmail med en lille PDF eller et billede til
 support@indbakke.funktion360.dk. Hent filen fra indbakken. Send et svar fra en
 supportsag, kontroller preview og se HTML-mailen i dit eget mailprogram.
 Udseendet kan variere mellem Outlook, Gmail og andre mailprogrammer.
+
+## Maildesign v2 og Support-ID
+
+Ny Funktion360-skabelon med mørkeblå top, mintfarvet accent og en særskilt
+fodnote. Det faktiske sagsnummer hentes fra supportsagen og vises i top og bund,
+selv hvis mailens emne ændres. Preview viser samme sagsnummer.
+
+Hvis en NY mail kommer tilbage fra outboxen uden HTML, stopper afsendelsen med
+en tydelig fejl i stedet for automatisk at sende standardtekst. Gamle genforsøg
+beholder deres oprindelige payload. Vent på at den nye Vercel-deployment er Ready,
+brug 'Se mailens udseende', og send en NY testmail efter opdateringen.
