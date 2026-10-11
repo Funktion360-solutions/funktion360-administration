@@ -27,6 +27,7 @@ export async function sendSupportEmail(
       reply_to: email.reply_to,
       subject: email.subject,
       text: email.body,
+      ...(email.html_body ? { html: email.html_body } : {}),
     }),
     signal: AbortSignal.timeout(15000),
     cache: "no-store",

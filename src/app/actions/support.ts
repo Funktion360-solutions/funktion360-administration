@@ -6,6 +6,7 @@ import { requireStaffMfa } from "@/lib/auth/require-staff-mfa";
 import { createClient } from "@/lib/supabase/server";
 import { mailConfigured, sendSupportEmail } from "@/lib/support/resend";
 import type { OutboxEmail } from "@/lib/support/types";
+import { renderSupportEmail } from "@/lib/support/email-template";
 
 async function authorize(permission: string) {
   await requirePermission(permission);
@@ -93,6 +94,7 @@ export async function sendMail(form: FormData) {
       recipient,
       subject,
       body,
+      ...(!retry ? { html_body: renderSupportEmail(subject, body) } : {}),
       sender: process.env.SUPPORT_MAIL_FROM,
       reply_to: replyTo,
     },

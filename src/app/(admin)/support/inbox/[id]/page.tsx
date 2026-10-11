@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { manageInbox } from "@/app/actions/support-inbox";
 import type { InboxMail } from "@/lib/support/inbox-types";
 import type { SupportCase } from "@/lib/support/types";
+import { MailAttachments } from "@/components/support/attachments";
 type Person = {
   id: string;
   first_name: string | null;
@@ -68,14 +69,20 @@ export default async function InboxDetail({
         </p>
       )}
       <div className="support-columns">
-        <section className="support-card support-padding">
-          <h2>Modtaget mail</h2>
+        <section className="support-card support-padding support-mail-reader">
+          <div className="support-reader-heading">
+            <span className="support-avatar" aria-hidden="true">
+              {mail.sender[0]?.toUpperCase() || "M"}
+            </span>
+            <div>
+              <h2>Modtaget mail</h2>
+              <p className="support-muted">{mail.sender}</p>
+            </div>
+            <span className="support-badge">Indgående</span>
+          </div>
           <p className="support-body">{mail.body}</p>
           {mail.attachment_count > 0 && (
-            <p className="support-notice">
-              Mailen har {mail.attachment_count} vedhæftninger. Filerne kan
-              endnu kun åbnes i Resends modtagelsesoversigt.
-            </p>
+            <MailAttachments mailId={id} count={mail.attachment_count} />
           )}
         </section>
         <aside className="support-stack">

@@ -49,7 +49,7 @@ export default async function TicketsPage({
           <h1>Supportsager</h1>
           <p>Personlig kundeservice og mailhistorik på tværs af produkterne.</p>
         </div>
-        <span className="support-count">{cases.length} sager</span>
+        <div className="support-heading-actions"><span className="support-count">{cases.length} sager</span><Link className="support-button" href="/support/inbox">Åbn indbakken</Link></div>
       </header>
       {!mailConfigured() && (
         <aside className="support-notice">
@@ -98,7 +98,7 @@ export default async function TicketsPage({
                   <h2>{c.subject}</h2>
                   <p>{c.person_name || c.organization_name || "Kunde"}</p>
                 </div>
-                <span className="support-badge">
+                <span className="support-badge" data-status={c.status}>
                   {statusLabels[c.status] ?? c.status}
                 </span>
               </Link>

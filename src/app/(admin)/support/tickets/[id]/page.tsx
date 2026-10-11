@@ -17,6 +17,7 @@ import {
 } from "@/app/actions/support";
 import { deliveryLabels } from "@/lib/support/inbox-types";
 import { SubmitMail } from "@/components/support/submit-mail";
+import { MailEditor } from "@/components/support/mail-editor";
 const notices: Record<string, string> = {
   "status-saved": "Sagens status er opdateret.",
   "status-error": "Status kunne ikke opdateres.",
@@ -103,7 +104,7 @@ export default async function TicketPage({
           <h1>{ticket.subject}</h1>
           <p>Oprettet {date(ticket.created_at)}</p>
         </div>
-        <span className="support-badge">
+        <span className="support-badge" data-status={ticket.status}>
           {statusLabels[ticket.status] ?? ticket.status}
         </span>
       </header>
@@ -124,7 +125,7 @@ export default async function TicketPage({
             {messages.length ? (
               messages.map((m) => (
                 <article
-                  className={`support-message ${m.message_type === "internal_note" ? "support-internal" : ""}`}
+                  className={`support-message ${m.message_type === "internal_note" ? "support-internal" : m.message_type === "staff_response" ? "support-outgoing" : "support-incoming"}`}
                   key={m.id}
                 >
                   <header>
@@ -134,7 +135,9 @@ export default async function TicketPage({
                     <small>
                       {m.message_type === "internal_note"
                         ? "Intern note · "
-                        : ""}
+                        : m.message_type === "staff_response"
+                          ? "Funktion360 · "
+                          : "Indgående · "}
                       {date(m.created_at)}
                     </small>
                   </header>
@@ -222,28 +225,12 @@ export default async function TicketPage({
                     maxLength={254}
                   />
                 </label>
-                <label>
-                  Emne
-                  <input
-                    name="subject"
-                    defaultValue={`[${ticket.case_number}] ${ticket.subject}`.slice(
-                      0,
-                      200,
-                    )}
-                    maxLength={200}
-                    required
-                  />
-                </label>
-                <label>
-                  Besked
-                  <textarea
-                    name="body"
-                    rows={10}
-                    maxLength={20000}
-                    required
-                    placeholder="Skriv dit svar til kunden…"
-                  />
-                </label>
+                <MailEditor
+                  initialSubject={`[${ticket.case_number}] ${ticket.subject}`.slice(
+                    0,
+                    200,
+                  )}
+                />
                 <SubmitMail disabled={!mailConfigured()} />
               </form>
               {!mailConfigured() && (

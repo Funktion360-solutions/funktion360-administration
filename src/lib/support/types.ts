@@ -26,6 +26,7 @@ export type OutboxEmail = {
   reply_to: string;
   subject: string;
   body: string;
+  html_body?: string | null;
   status: string;
   provider_id: string | null;
   created_at: string;
