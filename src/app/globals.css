@@ -24,3 +24,49 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Funktion360 support workspace */
+.support-workspace { max-width:1280px; margin:auto; display:grid; gap:24px; }
+.support-heading { display:flex; align-items:center; justify-content:space-between; gap:20px; flex-wrap:wrap; }
+.support-heading h1 { font-size:clamp(1.7rem,3vw,2.3rem); font-weight:650; line-height:1.2; margin:8px 0; overflow-wrap:anywhere; }
+.support-heading p,.support-muted { color:#60645d; font-size:14px; line-height:1.6; }
+.support-eyebrow { text-transform:uppercase; letter-spacing:.12em; font-size:11px!important; }
+.support-card { background:#fff; border:1px solid #dedfd7; border-radius:20px; overflow:hidden; box-shadow:0 4px 20px #20212003; }
+.support-padding { padding:clamp(18px,3vw,28px); }
+.support-card h2 { font-size:19px; font-weight:650; margin-bottom:12px; }
+.support-count,.support-badge { background:#e5f5c8; border:1px solid #d5e8b9; padding:7px 12px; border-radius:24px; font-size:12px; white-space:nowrap; }
+.support-notice { padding:16px 20px; border:1px solid #ead9a9; border-radius:14px; background:#fff8e7; line-height:1.6; font-size:14px; }
+.support-filters { display:flex; flex-wrap:wrap; gap:16px; align-items:end; padding:24px; border-bottom:1px solid #e7e8e2; }
+.support-filters label:first-child { flex:1; min-width:180px; }
+.support-form { display:grid; gap:18px; margin-top:20px; }
+.support-form label,.support-filters label { display:grid; gap:7px; font-size:13px; font-weight:550; }
+.support-workspace input:not([type=hidden]),.support-workspace select,.support-workspace textarea { border:1px solid #d8dbd0; border-radius:10px; background:#fafbf7; padding:12px 14px; width:100%; font-size:14px; font-weight:400; }
+.support-workspace textarea { resize:vertical; line-height:1.7; min-height:100px; }
+.support-workspace :is(input,textarea,select,button,a):focus-visible { outline:3px solid #85a839; outline-offset:3px; }
+.support-button { background:#202a1b; color:#fff; padding:12px 18px; border-radius:10px; font-size:14px; font-weight:550; cursor:pointer; width:fit-content; }
+.support-button:hover { background:#34482b; }
+.support-button:disabled { opacity:.5; cursor:not-allowed; }
+.support-secondary { background:#eaf1e0; color:#26341d; }
+.support-secondary:hover { background:#dce9cd; }
+.support-case { display:flex; justify-content:space-between; align-items:center; gap:20px; padding:22px 24px; border-bottom:1px solid #e7e8e2; }
+.support-case:last-child { border-bottom:0; }
+.support-case:hover { background:#f8fbf2; }
+.support-case small { color:#738063; font-size:11px; letter-spacing:.05em; }
+.support-case h2 { margin:5px 0; font-size:16px; overflow-wrap:anywhere; }
+.support-case p { color:#6c7166; font-size:13px; }
+.support-empty { padding:40px; text-align:center; color:#72796a; }
+.support-columns { display:grid; grid-template-columns:minmax(0,1.4fr) minmax(0,1fr); gap:24px; align-items:start; }
+.support-stack,.support-timeline { display:grid; gap:18px; }
+.support-body { white-space:pre-wrap; overflow-wrap:anywhere; line-height:1.75; font-size:14px; margin-top:12px; }
+.support-description { padding-bottom:20px; border-bottom:1px solid #e6e8df; margin-bottom:20px; color:#60645d; }
+.support-message { padding:18px; border:1px solid #e2e7db; border-radius:14px; background:#f8faf5; }
+.support-message header { display:flex; gap:12px; flex-wrap:wrap; justify-content:space-between; font-size:13px; }
+.support-message small { color:#72796a; font-size:11px; }
+.support-internal { background:#fff9e9; border-color:#eee0b7; }
+.support-outbox { border-top:1px solid #e2e7db; margin-top:24px; padding-top:20px; display:grid; gap:16px; font-size:13px; overflow-wrap:anywhere; }
+.support-outbox h3 { font-weight:600; }
+.support-outbox article { padding:12px 0; }
+.support-outbox form { margin-top:10px; }
+.support-back { color:#4f6937; font-size:14px; width:fit-content; }
+@media(max-width:1100px) { .support-columns { grid-template-columns:1fr; } }
+@media(max-width:650px) { .support-case { align-items:start; flex-direction:column; gap:10px; } .support-filters { padding:18px; } }
