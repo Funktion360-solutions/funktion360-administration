@@ -15,6 +15,7 @@ import {
   sendMail,
   updateSupportStatus,
 } from "@/app/actions/support";
+import { deliveryLabels } from "@/lib/support/inbox-types";
 import { SubmitMail } from "@/components/support/submit-mail";
 const notices: Record<string, string> = {
   "status-saved": "Sagens status er opdateret.",
@@ -82,6 +83,12 @@ export default async function TicketPage({
   const person = (people.data ?? []).find(
     (p: { id: string }) => p.id === ticket.person_id,
   ) as { primary_email?: string } | undefined;
+  const delivery = await db.rpc("crm_support_inbox", {
+    operation: "delivery",
+    payload: { case_id: id },
+  });
+  if (delivery.error) throw Error("Leveringsstatus kunne ikke hentes.");
+  const deliveries = (delivery.data ?? {}) as Record<string, string>;
   return (
     <div className="support-workspace">
       <Link className="support-back" href="/support/tickets">
@@ -149,7 +156,8 @@ export default async function TicketPage({
                   <p className="support-muted">
                     {date(e.created_at)} ·{" "}
                     {e.status === "accepted"
-                      ? "Accepteret af Resend"
+                      ? (deliveryLabels[deliveries[e.id]] ??
+                        "Accepteret af Resend")
                       : "Afsendelse ikke bekræftet"}
                   </p>
                   {e.status !== "accepted" && respondResult.data === true && (

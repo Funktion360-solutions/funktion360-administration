@@ -77,6 +77,7 @@ export const adminNavigation: AdminNavigationGroup[] = [
   {
     label: "Support",
     items: [
+      {label:"Indbakke",href:"/support/inbox"},
       {
         label: "Supportsager",
         href: "/support/tickets",

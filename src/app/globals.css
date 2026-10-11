@@ -70,3 +70,7 @@ body {
 .support-back { color:#4f6937; font-size:14px; width:fit-content; }
 @media(max-width:1100px) { .support-columns { grid-template-columns:1fr; } }
 @media(max-width:650px) { .support-case { align-items:start; flex-direction:column; gap:10px; } .support-filters { padding:18px; } }
+
+.support-inbox-tabs { display:flex;flex-wrap:wrap;gap:10px; }
+.support-inbox-tabs a { padding:10px 15px;border-radius:10px;background:white;border:1px solid #dedfd7;font-size:14px; }
+.support-inbox-tabs a[aria-current=page] { background:#e5f5c8;border-color:#c8dea9; }

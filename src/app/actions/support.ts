@@ -75,6 +75,16 @@ export async function sendMail(form: FormData) {
       body.length > 20000)
   )
     redirect(`${path}?notice=invalid`);
+  let replyTo = process.env.SUPPORT_MAIL_REPLY_TO;
+  if (!retry && process.env.SUPPORT_MAIL_INBOUND_ENABLED === "true") {
+    const thread = await db.rpc("crm_support_inbox", {
+      operation: "thread",
+      payload: { case_id: id },
+    });
+    if (thread.error || !thread.data?.reply_to)
+      redirect(`${path}?notice=prepare-error`);
+    replyTo = thread.data.reply_to;
+  }
   const { data, error } = await db.rpc("crm_support_email", {
     operation: retry ? "retry" : "prepare",
     payload: {
@@ -84,7 +94,7 @@ export async function sendMail(form: FormData) {
       subject,
       body,
       sender: process.env.SUPPORT_MAIL_FROM,
-      reply_to: process.env.SUPPORT_MAIL_REPLY_TO,
+      reply_to: replyTo,
     },
   });
   if (error || !data) redirect(`${path}?notice=prepare-error`);
