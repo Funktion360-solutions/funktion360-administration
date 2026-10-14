@@ -1,120 +1,14 @@
-import { createClient } from "@/lib/supabase/server";
-
-export default async function DashboardPage() {
-  const supabase = await createClient();
-
-  const [
-    { data: people },
-    { data: organizations },
-    { data: products },
-    { data: plans },
-    { data: prices },
-  ] = await Promise.all([
-    supabase.rpc("list_crm_people"),
-    supabase.rpc("list_crm_organizations"),
-    supabase.rpc("list_crm_products"),
-    supabase.rpc("list_crm_product_plans"),
-    supabase.rpc("list_crm_product_plan_prices"),
-  ]);
-
-  const metrics = [
-    {
-      label: "Personer",
-      value: people?.length ?? 0,
-      description: "Aktive CRM-personer",
-    },
-    {
-      label: "Organisationer",
-      value: organizations?.length ?? 0,
-      description: "Organisationer i CRM",
-    },
-    {
-      label: "Produkter",
-      value: products?.length ?? 0,
-      description: "Produkter i kataloget",
-    },
-    {
-      label: "Produktplaner",
-      value: plans?.length ?? 0,
-      description: "Kommercielle planer",
-    },
-    {
-      label: "Priskomponenter",
-      value: prices?.length ?? 0,
-      description: "Registrerede priser",
-    },
-  ];
-
-  return (
-    <div className="space-y-8">
-      <div>
-        <p className="font-mono text-xs uppercase tracking-[0.18em] text-black/45">
-          Overblik
-        </p>
-
-        <h1 className="mt-2 text-3xl font-semibold tracking-tight">
-          Dashboard
-        </h1>
-
-        <p className="mt-2 max-w-2xl text-sm text-black/55">
-          Centralt overblik over Funktion360s kunder,
-          produkter og kommercielle struktur.
-        </p>
-      </div>
-
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
-        {metrics.map((metric) => (
-          <div
-            key={metric.label}
-            className="rounded-2xl border border-black/10 bg-white p-5"
-          >
-            <p className="text-sm font-medium text-black/55">
-              {metric.label}
-            </p>
-
-            <p className="mt-4 text-3xl font-semibold tracking-tight">
-              {metric.value}
-            </p>
-
-            <p className="mt-2 text-xs text-black/45">
-              {metric.description}
-            </p>
-          </div>
-        ))}
-      </div>
-
-      <div className="grid gap-6 xl:grid-cols-[2fr_1fr]">
-        <section className="rounded-2xl border border-black/10 bg-white p-6">
-          <p className="font-mono text-xs uppercase tracking-[0.16em] text-black/40">
-            Commercial operations
-          </p>
-
-          <h2 className="mt-2 text-xl font-semibold">
-            Funktion360 Control Plane
-          </h2>
-
-          <p className="mt-3 max-w-2xl text-sm leading-6 text-black/55">
-            Dashboardet bliver centrum for salg, kontrakter,
-            abonnementer, licenser, fakturering, support og
-            drift på tværs af Funktion360s produkter.
-          </p>
-        </section>
-
-        <section className="rounded-2xl border border-black/10 bg-[#202120] p-6 text-white">
-          <p className="font-mono text-xs uppercase tracking-[0.16em] text-[#cfff69]">
-            System
-          </p>
-
-          <h2 className="mt-2 text-xl font-semibold">
-            Administration online
-          </h2>
-
-          <p className="mt-3 text-sm leading-6 text-white/55">
-            CRM, RBAC og produktkatalog er forbundet til
-            Funktion360-infrastrukturen.
-          </p>
-        </section>
-      </div>
-    </div>
-  );
+import Link from 'next/link';
+import {requireStaff} from '@/lib/auth/require-staff';
+import {createClient} from '@/lib/supabase/server';
+export const dynamic='force-dynamic';
+type Metric={key:string,label:string,description:string,href:string};
+const groups:Array<{title:string,description:string,metrics:Metric[]}>= [
+ {title:'Kunder og produkter',description:'Aktive poster i administrationen.',metrics:[{key:'people',label:'Personer',description:'Aktive CRM-personer',href:'/customers/people'},{key:'organizations',label:'Organisationer',description:'Aktive organisationer',href:'/customers/organizations'},{key:'products',label:'Produkter',description:'Aktive katalogprodukter',href:'/products'},{key:'plans',label:'Planer',description:'Aktive produktplaner',href:'/products/plans'}]},
+ {title:'Favn360 · Salg og Stripe-test',description:'Testbetaling og Stripe-teststatus er adskilt fra aktiveret produktadgang.',metrics:[{key:'quote_drafts',label:'Tilbudsudkast',description:'Udkast inden for gyldighed',href:'/sales/pipeline?stage=draft'},{key:'awaiting_acceptance',label:'Afventer accept',description:'Godkendte tilbud inden for gyldighed',href:'/sales/pipeline?stage=approved'},{key:'accepted_unpaid',label:'Afventer testbetaling',description:'Accepterede tilbud uden registreret testbetaling',href:'/sales/pipeline?stage=accepted'},{key:'test_paid',label:'Testbetaling registreret',description:'Betalte Stripe-testtilbud',href:'/billing'},{key:'payment_followups',label:'Betalingsopfølgning',description:'Testfakturaer med betalingsproblem og restbeløb',href:'/tasks'},{key:'test_subscriptions',label:'Aktive testabonnementer',description:'Senest synkroniserede Stripe-status',href:'/subscriptions'}]},
+ {title:'Intern vidensbase',description:'Vejledninger til Funktion360-teamet.',metrics:[{key:'knowledge_published',label:'Interne vejledninger',description:'Publiceret til teamet',href:'/support/knowledge?status=published'},{key:'knowledge_drafts',label:'Vejledningskladder',description:'Afventer intern publicering',href:'/support/knowledge?status=draft'}]},
+];
+export default async function Dashboard(){
+ await requireStaff();const db=await createClient();const result=await db.rpc('get_crm_dashboard_overview');const data=result.data as {metrics:Record<string,number>,availability:Record<string,string>,observed_at:string}|null;
+ return <div className="space-y-8"><header><p className="font-mono text-xs uppercase tracking-widest text-black/40">Funktion360 · Overblik</p><h1 className="mt-2 text-3xl font-semibold">Dashboard</h1><p className="mt-3 text-sm text-black/50">Kunder, salg, betalingsopfølgning og interne vejledninger samlet ét sted.</p></header>{result.error || !data?<p role="status" className="rounded-xl bg-amber-50 p-5 text-sm">Overblikket kunne ikke hentes. Kontrollér databaseopsætning og medarbejderadgang.</p>:<>{groups.map(group=><section key={group.title}><h2 className="text-xl font-semibold">{group.title}</h2><p className="mt-2 text-sm text-black/50">{group.description}</p><div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">{group.metrics.map(metric=>{const count=data.metrics[metric.key];const present=typeof count==='number';return <div key={metric.key} className="rounded-2xl border border-black/10 bg-white p-5"><p className="text-sm font-medium text-black/55">{metric.label}</p><p className="mt-4 text-3xl font-semibold">{present?new Intl.NumberFormat('da-DK').format(count):'—'}</p><p className="mt-3 text-xs text-black/50">{present?metric.description:data.availability[metric.key]==='module'?'Modulet kræver databaseopsætning':'Området er ikke tilgængeligt med dine rettigheder'}</p>{present?<Link href={metric.href} aria-label={'Åbn '+metric.label} className="mt-4 inline-flex min-h-11 items-center text-sm underline">Åbn →</Link>:null}</div>;})}</div></section>)}<p className="text-xs text-black/40">Hentet {new Date(data.observed_at).toLocaleString('da-DK',{timeZone:'Europe/Copenhagen'})}. Genindlæs for at opdatere. Stripe-tal afspejler de seneste modtagne hændelser.</p></>}</div>;
 }
