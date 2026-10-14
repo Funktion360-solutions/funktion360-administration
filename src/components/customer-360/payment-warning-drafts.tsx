@@ -1,0 +1,8 @@
+import Link from 'next/link';
+import {createClient} from '@/lib/supabase/server';
+type Draft={id:string,title:string,quote_id:string,recipient:string,subject:string,body:string,is_current:boolean};
+export async function PaymentWarningDrafts(){
+ const db=await createClient();const rights=await Promise.all(['quotes.read','licenses.read','organizations.read'].map(required_permission=>db.rpc('current_user_has_permission',{required_permission})));if(rights.some(r=>r.error || r.data!==true))return null;
+ const result=await db.rpc('list_crm_warning_drafts');const drafts=(result.data || []) as Draft[];
+ return <section className="rounded-2xl border border-black/10 bg-white p-6"><h2 className="text-xl font-semibold">Varslingsudkast · testmiljø</h2><p className="mt-3 text-sm text-black/50">Udkast til gennemgang. Der er ikke sendt mail, og syvdagesfristen er ikke startet.</p>{result.error?<p role="status" className="mt-4 text-sm">Udkastene kunne ikke hentes. Kontrollér databaseopsætning og rettigheder.</p>:drafts.length?<ul className="mt-5 grid gap-4">{drafts.map(draft=><li key={draft.id} className="rounded-xl border border-black/10 p-5"><Link href={'/sales/quotes/'+draft.quote_id} className="font-semibold underline">{draft.title}</Link><p className="mt-3 text-sm">Modtager: {draft.recipient}</p><p className="mt-2 text-sm font-semibold">{draft.is_current?'Udkast klar til gennemgang':'Oplysningerne er ændret · kontrollér igen'}</p><details className="mt-4"><summary className="cursor-pointer text-sm">Se varselsteksten</summary><h3 className="mt-4 font-semibold">{draft.subject}</h3><p className="mt-3 whitespace-pre-wrap text-sm leading-6">{draft.body}</p></details></li>)}</ul>:<p className="mt-4 text-sm">Ingen varslingsudkast endnu.</p>}</section>;
+}
