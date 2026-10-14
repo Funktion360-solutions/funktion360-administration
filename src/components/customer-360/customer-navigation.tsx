@@ -21,6 +21,11 @@ export function CustomerNavigation({
       active: pathname === basePath,
     },
     {
+      label: "Funktion360 ID",
+      href: `${basePath}/identity`,
+      active: pathname.startsWith(`${basePath}/identity`),
+    },
+    {
       label: "Kontakter",
       href: `${basePath}/contacts`,
       active: pathname.startsWith(`${basePath}/contacts`),

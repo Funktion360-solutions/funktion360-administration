@@ -1,0 +1,6 @@
+[
+  "src/lib/funktion360-id/identity-status.ts",
+  "src/app/(admin)/customers/organizations/[id]/identity/page.tsx",
+  "docs/funktion360-id-administration.md",
+  "tests/funktion360-id-identity-status.test.mjs"
+]
