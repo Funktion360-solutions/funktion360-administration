@@ -1,0 +1,12 @@
+import Link from 'next/link';
+import {createClient} from '@/lib/supabase/server';
+import {statusLabels,type SupportCase} from '@/lib/support/types';
+export async function PersonSupport({personId}:{personId:string}){
+ const db=await createClient();const permission=await db.rpc('current_user_has_permission',{required_permission:'support.read'});
+ if(permission.error || permission.data!==true)return <section className="rounded-2xl border border-black/10 bg-white p-6"><h2 className="text-xl font-semibold">Supporthistorik</h2><p className="mt-3 text-sm text-black/50">Supporthistorikken kræver særskilt adgang.</p></section>;
+ const [result,manage]=await Promise.all([db.rpc('list_crm_support_cases'),db.rpc('current_user_has_permission',{required_permission:'support.manage'})]);
+ if(result.error)return <section className="rounded-2xl border border-black/10 bg-white p-6"><h2 className="text-xl font-semibold">Supporthistorik</h2><p role="status" className="mt-3 text-sm">Supportsagerne kunne ikke hentes. Prøv igen.</p></section>;
+ const cases=((result.data || []) as SupportCase[]).filter(item=>item.person_id===personId).sort((a,b)=>Date.parse(b.created_at)-Date.parse(a.created_at));
+ const active=cases.filter(item=>!['resolved','closed','cancelled'].includes(item.status));
+ return <section className="overflow-hidden rounded-2xl border border-black/10 bg-white"><div className="flex flex-wrap items-start justify-between gap-4 border-b border-black/10 p-6"><div><p className="font-mono text-xs uppercase tracking-widest text-black/40">Kundeservice</p><h2 className="mt-2 text-xl font-semibold">Supporthistorik</h2><p className="mt-2 text-sm text-black/50">{active.length} aktive · {cases.length} sager i alt</p></div>{manage.data===true?<Link className="inline-flex min-h-11 items-center rounded-xl bg-[#202120] px-4 text-sm text-white" href={'/support/tickets?person='+encodeURIComponent(personId)+'#new-support-case'}>Opret supportsag</Link>:null}</div>{cases.length?<ul className="divide-y divide-black/10">{cases.map(item=><li key={item.id}><Link className="flex flex-wrap items-center justify-between gap-4 px-6 py-4 hover:bg-[#f8f8f4]" href={'/support/tickets/'+item.id}><div><p className="font-mono text-xs text-black/45">{item.case_number}</p><p className="mt-1 font-medium">{item.subject}</p></div><span className="rounded-full bg-[#f0f2eb] px-3 py-1 text-xs">{statusLabels[item.status] || item.status}</span></Link></li>)}</ul>:<p className="px-6 py-5 text-sm text-black/50">Ingen supportsager er tilknyttet denne person.</p>}</section>;
+}

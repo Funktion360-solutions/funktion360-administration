@@ -1,3 +1,5 @@
+import {PersonSupport} from '@/components/customer-360/person-support';
+import {requirePermission} from '@/lib/auth/require-permission';
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
@@ -65,6 +67,10 @@ const organizationTypeLabels: Record<string, string> = {
 
 const systemLabels: Record<string, string> = {
   favn360: "Favn360",
+  funktion360_id: "Funktion360 ID",
+  vores_kok: "Vores Kok",
+  studiemakker: "Studiemakker",
+  dej: "Dej",
 };
 
 function formatDate(value: string | null) {
@@ -81,6 +87,7 @@ export default async function PersonPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  await requirePermission("people.read");
   const { id } = await params;
   const supabase = await createClient();
 
@@ -268,7 +275,7 @@ export default async function PersonPage({
             </p>
 
             <h2 className="mt-2 text-xl font-semibold">
-              Systemidentiteter
+              ID og produktkonti
             </h2>
           </div>
 
@@ -277,6 +284,7 @@ export default async function PersonPage({
           </span>
         </div>
 
+        <p className="px-6 py-4 text-sm text-black/50">Registrerede identiteter forbinder personen med produktkonti. De dokumenterer ikke i sig selv abonnement, betaling eller produktadgang.</p>
         {identities.length > 0 ? (
           <div className="divide-y divide-black/10">
             {identities.map((identity) => (
@@ -314,7 +322,7 @@ export default async function PersonPage({
                         : "inline-block rounded-full border border-black/10 px-2.5 py-1 font-mono text-[10px] uppercase tracking-wide text-black/45"
                     }
                   >
-                    {identity.is_active ? "Aktiv" : "Inaktiv"}
+                    {identity.is_active ? "Registrering aktiv" : "Registrering inaktiv"}
                   </span>
                 </div>
               </div>
@@ -329,12 +337,8 @@ export default async function PersonPage({
         )}
       </section>
 
-      <section className="grid gap-4 md:grid-cols-3">
-        <PlaceholderCard
-          eyebrow="Support"
-          title="Supportsager"
-          description="Supporthistorik og aktive sager kobles på personprofilen i næste del."
-        />
+      <PersonSupport personId={person.id}/>
+      <section className="grid gap-4 md:grid-cols-2">
 
         <PlaceholderCard
           eyebrow="Aktivitet"

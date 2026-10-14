@@ -14,7 +14,7 @@ type Person = {
 export default async function TicketsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; status?: string; notice?: string }>;
+  searchParams: Promise<{ q?: string; status?: string; notice?: string; person?: string }>;
 }) {
   await requirePermission("support.read");
   const search = await searchParams;
@@ -31,6 +31,7 @@ export default async function TicketsPage({
       ? await db.rpc("list_crm_people")
       : { data: [], error: null };
   const people = (peopleResult.data ?? []) as Person[];
+  const selectedPerson=typeof search.person==='string' && people.some(person=>person.id===search.person)?search.person:'';
   const cases = (casesResult.data ?? []) as SupportCase[];
   const query = (search.q ?? "").toLocaleLowerCase("da");
   const filtered = cases.filter(
@@ -117,10 +118,10 @@ export default async function TicketsPage({
           {peopleResult.error ? (
             <p role="alert">Kundelisten kunne ikke hentes.</p>
           ) : (
-            <form action={createSupportCase} className="support-form">
+            <form id="new-support-case" action={createSupportCase} className="support-form">
               <label>
                 Kunde
-                <select required name="person_id" defaultValue="">
+                <select required name="person_id" defaultValue={selectedPerson}>
                   <option value="" disabled>
                     Vælg en person
                   </option>
