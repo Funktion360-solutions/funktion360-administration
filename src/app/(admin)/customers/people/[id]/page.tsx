@@ -1,3 +1,4 @@
+import {PersonPayments} from '@/components/customer-360/person-payments';
 import {PersonProducts} from '@/components/customer-360/person-products';
 import {PersonSupport} from '@/components/customer-360/person-support';
 import {requirePermission} from '@/lib/auth/require-permission';
@@ -341,6 +342,7 @@ export default async function PersonPage({
         )}
       </section>
 
+      <PersonPayments personId={person.id}/>
       <PersonProducts personId={person.id} notice={product_notice}/>
       <PersonSupport personId={person.id}/>
       <section className="grid gap-4 md:grid-cols-2">
