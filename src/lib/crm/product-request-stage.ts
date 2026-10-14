@@ -1,0 +1,1 @@
+export function requestNextStep(slug:string,status:string){if(status==='failed')return 'Undersøg fejlen før genforsøg';if(status==='provisioning')return 'Afventer bekræftelse fra produktet';if(status==='suspended')return 'Kontrollér årsagen til begrænsningen';return slug==='favn360'?'Tilbud og betaling skal verificeres':'Invitation skal klargøres';}
