@@ -65,6 +65,8 @@ export async function createProductPlan(formData: FormData) {
   }
 
   revalidatePath("/");
+  revalidatePath("/products");
+  revalidatePath("/products/plans");
 }
 
 export async function updateProductPlan(formData: FormData) {
@@ -128,6 +130,8 @@ export async function updateProductPlan(formData: FormData) {
   }
 
   revalidatePath("/");
+  revalidatePath("/products");
+  revalidatePath("/products/plans");
 }
 
 export async function deleteProductPlan(formData: FormData) {
@@ -153,4 +157,6 @@ export async function deleteProductPlan(formData: FormData) {
   }
 
   revalidatePath("/");
+  revalidatePath("/products");
+  revalidatePath("/products/plans");
 }

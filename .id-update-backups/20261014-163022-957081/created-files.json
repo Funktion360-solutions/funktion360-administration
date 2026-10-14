@@ -1,0 +1,5 @@
+[
+  "src/app/(admin)/products/catalog.module.css",
+  "src/app/(admin)/products/page.tsx",
+  "src/app/(admin)/products/plans/page.tsx"
+]

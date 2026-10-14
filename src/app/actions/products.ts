@@ -41,4 +41,6 @@ export async function createProduct(formData: FormData) {
   }
 
   revalidatePath("/");
+  revalidatePath("/products");
+  revalidatePath("/products/plans");
 }
