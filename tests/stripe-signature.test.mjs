@@ -1,0 +1,3 @@
+import {test} from 'node:test';import assert from 'node:assert/strict';import Stripe from 'stripe';
+const stripe=new Stripe('sk_test_verification_only'),secret='whsec_test_verification_only',payload=JSON.stringify({id:'evt_test',object:'event',type:'checkout.session.completed',livemode:false,data:{object:{id:'cs_test_verification'}}});
+test('Stripe signatures reject modified bodies and the wrong endpoint secret',()=>{const signature=stripe.webhooks.generateTestHeaderString({payload,secret});assert.equal(stripe.webhooks.constructEvent(payload,signature,secret).id,'evt_test');assert.throws(()=>stripe.webhooks.constructEvent(payload+' ',signature,secret));assert.throws(()=>stripe.webhooks.constructEvent(payload,signature,'whsec_wrong'));});

@@ -1,0 +1,4 @@
+import {test} from 'node:test';import assert from 'node:assert/strict';import {checkoutLines} from '../src/lib/crm/quote-lines.ts';
+const line=interval=>({description:'Favn360',quantity:2,unit_minor:10000,interval});
+test('one recurring interval and setup fee preserve exact first payment',()=>{const result=checkoutLines([line('month'),line('one_time')],'inclusive');assert.equal(result.total,40000);assert.equal(result.mode,'subscription');assert.equal(checkoutLines([line('one_time')],'inclusive').mode,'payment');});
+test('unsupported periods, exclusive VAT and zero totals are refused',()=>{for(const value of [[line('month'),line('year')],[line('custom')],[{...line('month'),unit_minor:0}]])assert.throws(()=>checkoutLines(value,'inclusive'));assert.throws(()=>checkoutLines([line('month')],'exclusive'));assert.throws(()=>checkoutLines([],'inclusive'));});
