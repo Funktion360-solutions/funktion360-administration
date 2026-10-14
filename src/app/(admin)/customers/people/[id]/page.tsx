@@ -1,3 +1,4 @@
+import {PersonProducts} from '@/components/customer-360/person-products';
 import {PersonSupport} from '@/components/customer-360/person-support';
 import {requirePermission} from '@/lib/auth/require-permission';
 import Link from "next/link";
@@ -83,12 +84,15 @@ function formatDate(value: string | null) {
 }
 
 export default async function PersonPage({
+  searchParams,
   params,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{product_notice?:string}>;
 }) {
   await requirePermission("people.read");
   const { id } = await params;
+  const {product_notice}=await searchParams;
   const supabase = await createClient();
 
   const [
@@ -337,6 +341,7 @@ export default async function PersonPage({
         )}
       </section>
 
+      <PersonProducts personId={person.id} notice={product_notice}/>
       <PersonSupport personId={person.id}/>
       <section className="grid gap-4 md:grid-cols-2">
 
