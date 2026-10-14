@@ -1,0 +1,51 @@
+begin;
+create table crm.quote_deliveries(id uuid primary key,quote_id uuid not null references crm.quote_drafts(id),token_hash text not null unique,status text not null default 'prepared' check(status in ('prepared','sent')),recipient text not null,subject text not null,body text not null,provider_id text,created_at timestamptz not null default now(),sent_at timestamptz);
+alter table crm.quote_deliveries enable row level security;
+revoke all on crm.quote_deliveries from public,anon,authenticated;
+create function crm_private.quote_delivery(p_quote uuid,p_id uuid,p_url text) returns jsonb language plpgsql security definer set search_path='' as $$declare delivery crm.quote_deliveries%rowtype;q crm.quote_drafts%rowtype;recipient text;staff uuid;token text;begin
+ if auth.uid() is null or not crm.has_permission('quotes.manage') or not crm.has_permission('people.read') then raise exception 'Permission denied' using errcode='42501';end if;
+ perform public.require_crm_critical_action_aal2();
+ select id into strict staff from crm.staff_users where auth_user_id=auth.uid() and status='active';
+ select * into delivery from crm.quote_deliveries where id=p_id and quote_id=p_quote;
+ if found then if delivery.status='prepared' and delivery.created_at<now()-interval '23 hours' then raise exception 'Retry window expired' using errcode='22023';end if;return to_jsonb(delivery);end if;
+ if p_id is null or p_url is null or p_url !~ '^https://administration\.funktion360\.dk/offers/[0-9a-f]{64}$' then raise exception 'Invalid offer URL' using errcode='22023';end if;
+ select * into q from crm.quote_drafts where id=p_quote for update;
+ if not found or q.status<>'approved' or q.valid_until<current_date then raise exception 'Approved valid quote required' using errcode='22023';end if;
+ if exists(select 1 from crm.quote_deliveries where quote_id=p_quote and status='prepared') then raise exception 'Retry the existing delivery' using errcode='22023';end if;
+ select primary_email into recipient from crm.people where id=q.person_id and status='active';
+ if recipient is null then raise exception 'Active recipient required' using errcode='22023';end if;
+ token:=substring(p_url from '[0-9a-f]{64}$');
+ insert into crm.quote_deliveries(id,quote_id,token_hash,recipient,subject,body) values(p_id,p_quote,encode(sha256(convert_to(token,'UTF8')),'hex'),recipient,'Dit tilbud fra Funktion360',q.title||E'\n\nLæs dit tilbud her:\n'||p_url||E'\n\nTilbuddet er gyldigt til '||q.valid_until::text||E'.\nDu kan endnu ikke acceptere eller betale via linket.') returning * into delivery;
+ insert into crm.audit_events(actor_staff_user_id,actor_auth_user_id,action,category,entity_type,entity_id,result,metadata) values(staff,auth.uid(),'PREPARE_QUOTE_MAIL','sales','quote_draft',p_quote,'success',jsonb_build_object('delivery_id',p_id));
+ return to_jsonb(delivery);
+end$$;
+create function crm_private.mark_quote_sent(p_id uuid,p_provider text) returns void language plpgsql security definer set search_path='' as $$declare staff uuid;delivery crm.quote_deliveries%rowtype;begin
+ if auth.uid() is null or not crm.has_permission('quotes.manage') then raise exception 'Permission denied' using errcode='42501';end if;
+ perform public.require_crm_critical_action_aal2();
+ select id into strict staff from crm.staff_users where auth_user_id=auth.uid() and status='active';
+ if p_provider is null or char_length(p_provider) not between 1 and 200 then raise exception 'Invalid mail ID' using errcode='22023';end if;
+ select * into delivery from crm.quote_deliveries where id=p_id for update;
+ if not found then raise exception 'Delivery missing' using errcode='22023';end if;
+ if delivery.status='sent' then return;end if;
+ update crm.quote_deliveries set status='sent',sent_at=now(),provider_id=p_provider where id=p_id;
+ insert into crm.audit_events(actor_staff_user_id,actor_auth_user_id,action,category,entity_type,entity_id,result,metadata) values(staff,auth.uid(),'SEND_QUOTE','sales','quote_draft',delivery.quote_id,'success',jsonb_build_object('delivery_id',p_id));
+end$$;
+create function crm_private.list_quote_deliveries(p_quote uuid) returns table(id uuid,status text,created_at timestamptz,sent_at timestamptz) language plpgsql security definer set search_path='' as $$begin
+ if auth.uid() is null or not crm.has_permission('quotes.read') then raise exception 'Permission denied' using errcode='42501';end if;
+ return query select d.id,d.status,d.created_at,d.sent_at from crm.quote_deliveries d where d.quote_id=p_quote order by d.created_at desc;
+end$$;
+create function crm_private.public_quote(p_hash text) returns jsonb language plpgsql security definer set search_path='' as $$declare result jsonb;begin
+ if p_hash is null or p_hash !~ '^[0-9a-f]{64}$' then return null;end if;
+ select jsonb_build_object('title',q.title,'lines',q.lines,'currency',q.currency,'vat_mode',q.vat_mode,'valid_until',q.valid_until) into result from crm.quote_deliveries d join crm.quote_drafts q on q.id=d.quote_id where d.token_hash=p_hash and q.status='approved' and q.valid_until>=current_date;
+ return result;
+end$$;
+create function public.prepare_crm_quote_mail(p_quote uuid,p_id uuid,p_url text) returns jsonb language sql security invoker set search_path='' as $$select crm_private.quote_delivery(p_quote,p_id,p_url)$$;
+create function public.mark_crm_quote_mail_sent(p_id uuid,p_provider text) returns void language sql security invoker set search_path='' as $$select crm_private.mark_quote_sent(p_id,p_provider)$$;
+create function public.list_crm_quote_deliveries(p_quote uuid) returns table(id uuid,status text,created_at timestamptz,sent_at timestamptz) language sql security invoker set search_path='' as $$select * from crm_private.list_quote_deliveries(p_quote)$$;
+create function public.read_crm_public_quote(p_hash text) returns jsonb language sql security invoker set search_path='' as $$select crm_private.public_quote(p_hash)$$;
+revoke all on function crm_private.quote_delivery(uuid,uuid,text),crm_private.mark_quote_sent(uuid,text),crm_private.list_quote_deliveries(uuid),public.prepare_crm_quote_mail(uuid,uuid,text),public.mark_crm_quote_mail_sent(uuid,text),public.list_crm_quote_deliveries(uuid) from public,anon,authenticated;
+grant execute on function crm_private.quote_delivery(uuid,uuid,text),crm_private.mark_quote_sent(uuid,text),crm_private.list_quote_deliveries(uuid),public.prepare_crm_quote_mail(uuid,uuid,text),public.mark_crm_quote_mail_sent(uuid,text),public.list_crm_quote_deliveries(uuid) to authenticated;
+revoke all on function crm_private.public_quote(text),public.read_crm_public_quote(text) from public,anon,authenticated;
+grant usage on schema crm_private to anon;
+grant execute on function crm_private.public_quote(text),public.read_crm_public_quote(text) to anon,authenticated;
+commit;

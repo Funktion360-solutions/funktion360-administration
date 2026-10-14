@@ -1,0 +1,8 @@
+import {randomUUID} from 'node:crypto';
+import {createClient} from '@/lib/supabase/server';
+import {sendQuote} from '@/app/actions/quote-mail';
+export async function QuoteMail({quoteId,approved}:{quoteId:string,approved:boolean}){
+ const db=await createClient();const [result,manage]=await Promise.all([db.rpc('list_crm_quote_deliveries',{p_quote:quoteId}),db.rpc('current_user_has_permission',{required_permission:'quotes.manage'})]);
+ if(result.error)return null;const deliveries=(result.data || []) as Array<{id:string,status:string,created_at:string,sent_at:string|null}>;const pending=deliveries.find(d=>d.status==='prepared');
+ return <section className="rounded-2xl border border-black/10 bg-white p-6"><h2 className="font-semibold">Mail til kunden</h2><p className="mt-3 text-sm text-black/50">Sender det godkendte tilbud til personens registrerede email med et privat læselink. Linket åbner ikke produktadgang.</p><ul className="mt-4 space-y-3">{deliveries.map(d=><li key={d.id} className="text-sm">{d.status==='sent'?'Mail accepteret af mailudbyderen':'Afsendelse afventer bekræftelse'} · {new Date(d.created_at).toLocaleString('da-DK',{timeZone:'Europe/Copenhagen'})}</li>)}</ul>{approved && manage.data===true?<form action={sendQuote} className="mt-5"><input type="hidden" name="quote_id" value={quoteId}/><input type="hidden" name="delivery_id" value={pending?.id || randomUUID()}/><button className="rounded-xl bg-[#202120] px-5 py-3 text-sm text-white">{pending?'Genforsøg samme afsendelse':deliveries.length?'Send tilbuddet igen':'Send tilbud til kunden'}</button></form>:null}<p className="mt-3 text-xs text-black/45">Mailudbyderens accept er ikke bevis for levering. Genforsøg af en ubekræftet afsendelse er begrænset til 23 timer.</p></section>;
+}

@@ -12,6 +12,7 @@ export function mailConfigured() {
 export async function sendSupportEmail(
   email: OutboxEmail,
   request: typeof fetch = fetch,
+  idempotencyKey = `support/${email.id}`,
 ): Promise<string> {
   if (!mailConfigured()) throw new Error("Mailopsætningen mangler.");
   const response = await request("https://api.resend.com/emails", {
@@ -19,7 +20,7 @@ export async function sendSupportEmail(
     headers: {
       Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
       "Content-Type": "application/json",
-      "Idempotency-Key": `support/${email.id}`,
+      "Idempotency-Key": idempotencyKey,
     },
     body: JSON.stringify({
       from: email.sender,
