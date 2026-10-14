@@ -1,0 +1,6 @@
+[
+  "src/lib/crm/agreements.ts",
+  "src/components/customer-360/agreement-overview.tsx",
+  "src/app/(admin)/subscriptions/page.tsx",
+  "src/app/(admin)/contracts/page.tsx"
+]
