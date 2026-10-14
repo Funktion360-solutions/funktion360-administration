@@ -1,3 +1,4 @@
+import {PersonIdLink} from '@/components/customer-360/person-id-link';
 import {StripeTestInvoices} from '@/components/customer-360/stripe-test-invoices';
 import {StripeTestSubscriptions} from '@/components/customer-360/stripe-test-subscriptions';
 import {PersonPayments} from '@/components/customer-360/person-payments';
@@ -91,11 +92,11 @@ export default async function PersonPage({
   params,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{product_notice?:string}>;
+  searchParams: Promise<{product_notice?:string,id_notice?:string}>;
 }) {
   await requirePermission("people.read");
   const { id } = await params;
-  const {product_notice}=await searchParams;
+  const {product_notice,id_notice}=await searchParams;
   const supabase = await createClient();
 
   const [
@@ -344,6 +345,7 @@ export default async function PersonPage({
         )}
       </section>
 
+      <PersonIdLink personId={person.id} notice={id_notice}/>
       <PersonPayments personId={person.id}/><StripeTestSubscriptions personId={person.id}/><StripeTestInvoices personId={person.id}/>
       <PersonProducts personId={person.id} notice={product_notice}/>
       <PersonSupport personId={person.id}/>

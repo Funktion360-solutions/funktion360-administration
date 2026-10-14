@@ -1,0 +1,9 @@
+'use client';
+import {useActionState} from 'react';
+import {lookupIdentity,type LookupState} from '@/app/actions/funktion360-id';
+import {linkPersonId} from '@/app/actions/person-id-link';
+import {QuoteApproveButton} from '@/components/quote-approve-button';
+export function PersonIdLinkForm({personId}:{personId:string}){
+ const [state,lookup,pending]=useActionState(lookupIdentity,{} as LookupState);
+ return <div className="mt-5 space-y-5"><form action={lookup} className="grid gap-3"><label className="grid gap-2 text-sm">Funktion360 ID-bruger-ID<input name="subject" required maxLength={36} placeholder="UUID fra Funktion360 ID" className="min-h-11 rounded-xl border border-black/20 p-3"/></label><button disabled={pending} aria-busy={pending} className="min-h-11 rounded-xl border border-black/20 px-5 py-3 text-sm disabled:opacity-60">{pending?'Slår op…':'Kontrollér ID-brugeren'}</button></form>{state.error?<p role="status" className="text-sm">{state.error}</p>:null}{state.identity?<div className="rounded-xl bg-[#f0f2eb] p-5"><p className="break-all text-sm">Bruger-ID: {state.identity.subject}</p><p className="mt-2 text-sm">Email hos ID: {state.identity.email || 'Ingen email'}</p><p className="mt-2 text-sm">{state.identity.emailVerified?'Email er bekræftet hos Funktion360 ID':'Email er endnu ikke bekræftet'}</p>{state.identity.emailVerified && state.identity.email?<form action={linkPersonId} className="mt-4 grid gap-4"><input type="hidden" name="person_id" value={personId}/><input type="hidden" name="subject" value={state.identity.subject}/><label className="flex gap-3 text-sm"><input type="checkbox" name="confirm" value="yes" required/>Jeg har kontrolleret, at denne Funktion360 ID-konto tilhører personen på denne CRM-profil.</label><QuoteApproveButton label="Kobl Funktion360 ID" pendingLabel="Kontrollerer og kobler…"/></form>:null}</div>:null}</div>;
+}
