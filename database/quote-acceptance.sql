@@ -1,0 +1,63 @@
+begin;
+alter table crm.quote_drafts add column accepted_at timestamptz;
+alter table crm.quote_drafts add column accepted_email text;
+create table crm.quote_acceptance_challenges(quote_id uuid primary key references crm.quote_drafts(id),delivery_id uuid not null references crm.quote_deliveries(id),challenge_id uuid not null unique,code_hash text not null,expires_at timestamptz not null,attempts integer not null default 0,created_at timestamptz not null default now());
+alter table crm.quote_acceptance_challenges enable row level security;
+revoke all on crm.quote_acceptance_challenges from public,anon,authenticated;
+create function crm_private.prepare_quote_acceptance(p_hash text,p_challenge uuid,p_code_hash text) returns jsonb language plpgsql security definer set search_path='' as $$declare delivery crm.quote_deliveries%rowtype;q crm.quote_drafts%rowtype;begin
+ if p_hash is null or p_hash !~ '^[0-9a-f]{64}$' or p_challenge is null or p_code_hash is null or p_code_hash !~ '^[0-9a-f]{64}$' then raise exception 'Invalid challenge' using errcode='22023';end if;
+ select * into delivery from crm.quote_deliveries where token_hash=p_hash;
+ if not found then raise exception 'Offer unavailable' using errcode='22023';end if;
+ select * into q from crm.quote_drafts where id=delivery.quote_id for update;
+ if q.status<>'approved' or q.valid_until<current_date or q.accepted_at is not null then raise exception 'Offer unavailable' using errcode='22023';end if;
+ if exists(select 1 from crm.quote_acceptance_challenges where quote_id=q.id and created_at>now()-interval '60 seconds') then raise exception 'Wait before requesting a new code' using errcode='22023';end if;
+ insert into crm.quote_acceptance_challenges(quote_id,delivery_id,challenge_id,code_hash,expires_at) values(q.id,delivery.id,p_challenge,p_code_hash,now()+interval '10 minutes') on conflict(quote_id) do update set delivery_id=excluded.delivery_id,challenge_id=excluded.challenge_id,code_hash=excluded.code_hash,expires_at=excluded.expires_at,attempts=0,created_at=now();
+ return jsonb_build_object('recipient',delivery.recipient,'title',q.title);
+end$$;
+create function crm_private.accept_quote(p_hash text,p_challenge uuid,p_code_hash text) returns boolean language plpgsql security definer set search_path='' as $$declare delivery crm.quote_deliveries%rowtype;q crm.quote_drafts%rowtype;c crm.quote_acceptance_challenges%rowtype;begin
+ select * into delivery from crm.quote_deliveries where token_hash=p_hash;
+ if not found then return false;end if;
+ select * into q from crm.quote_drafts where id=delivery.quote_id for update;
+ if q.status<>'approved' or q.valid_until<current_date or q.accepted_at is not null then return false;end if;
+ select * into c from crm.quote_acceptance_challenges where quote_id=q.id for update;
+ if not found or c.challenge_id is distinct from p_challenge or c.delivery_id<>delivery.id or c.expires_at<now() or c.attempts>=5 or p_code_hash is null then return false;end if;
+ update crm.quote_acceptance_challenges set attempts=attempts+1 where quote_id=q.id;
+ if c.code_hash<>p_code_hash then return false;end if;
+ update crm.quote_drafts set accepted_at=now(),accepted_email=delivery.recipient where id=q.id;
+ delete from crm.quote_acceptance_challenges where quote_id=q.id;
+ insert into crm.audit_events(action,category,entity_type,entity_id,result,metadata) values('CUSTOMER_ACCEPT_QUOTE','sales','quote_draft',q.id,'success',jsonb_build_object('person_id',q.person_id,'delivery_id',delivery.id,'email_verified',true,'statement_version','offer-acceptance-v1'));
+ return true;
+end$$;
+create function public.prepare_crm_quote_acceptance(p_hash text,p_challenge uuid,p_code_hash text) returns jsonb language sql security invoker set search_path='' as $$select crm_private.prepare_quote_acceptance(p_hash,p_challenge,p_code_hash)$$;
+create function public.accept_crm_quote(p_hash text,p_challenge uuid,p_code_hash text) returns boolean language sql security invoker set search_path='' as $$select crm_private.accept_quote(p_hash,p_challenge,p_code_hash)$$;
+revoke all on function crm_private.prepare_quote_acceptance(text,uuid,text),crm_private.accept_quote(text,uuid,text),public.prepare_crm_quote_acceptance(text,uuid,text),public.accept_crm_quote(text,uuid,text) from public,anon,authenticated;
+grant usage on schema crm_private to service_role;
+grant execute on function crm_private.prepare_quote_acceptance(text,uuid,text),crm_private.accept_quote(text,uuid,text),public.prepare_crm_quote_acceptance(text,uuid,text),public.accept_crm_quote(text,uuid,text) to service_role;
+create or replace function crm_private.public_quote(p_hash text) returns jsonb language plpgsql security definer set search_path='' as $$declare result jsonb;begin
+ if p_hash is null or p_hash !~ '^[0-9a-f]{64}$' then return null;end if;
+ select jsonb_build_object('title',q.title,'lines',q.lines,'currency',q.currency,'vat_mode',q.vat_mode,'valid_until',q.valid_until,'accepted_at',q.accepted_at) into result from crm.quote_deliveries d join crm.quote_drafts q on q.id=d.quote_id where d.token_hash=p_hash and q.status='approved' and q.valid_until>=current_date;
+ return result;
+end$$;
+create or replace function crm_private.get_quote(p_id uuid) returns jsonb language plpgsql security definer set search_path='' as $$declare result jsonb;begin
+ if auth.uid() is null or not crm.has_permission('quotes.read') or not crm.has_permission('people.read') then raise exception 'Permission denied' using errcode='42501';end if;
+ select jsonb_build_object('id',q.id,'person_id',q.person_id,'person_name',coalesce(nullif(btrim(concat_ws(' ',p.first_name,p.last_name)),''),p.primary_email,'Unavngiven person'),'title',q.title,'lines',q.lines,'currency',q.currency,'vat_mode',q.vat_mode,'valid_until',q.valid_until,'status',q.status,'approved_at',q.approved_at,'created_at',q.created_at,'accepted_at',q.accepted_at,'accepted_email',q.accepted_email) into result from crm.quote_drafts q join crm.people p on p.id=q.person_id where q.id=p_id;
+ return result;
+end$$;
+create or replace function crm_private.quote_delivery(p_quote uuid,p_id uuid,p_url text) returns jsonb language plpgsql security definer set search_path='' as $$declare delivery crm.quote_deliveries%rowtype;q crm.quote_drafts%rowtype;recipient text;staff uuid;token text;begin
+ if auth.uid() is null or not crm.has_permission('quotes.manage') or not crm.has_permission('people.read') then raise exception 'Permission denied' using errcode='42501';end if;
+ perform public.require_crm_critical_action_aal2();
+ select id into strict staff from crm.staff_users where auth_user_id=auth.uid() and status='active';
+ select * into delivery from crm.quote_deliveries where id=p_id and quote_id=p_quote;
+ if found then if delivery.status='prepared' and delivery.created_at<now()-interval '23 hours' then raise exception 'Retry window expired' using errcode='22023';end if;return to_jsonb(delivery);end if;
+ if p_id is null or p_url is null or p_url !~ '^https://administration\.funktion360\.dk/offers/[0-9a-f]{64}$' then raise exception 'Invalid offer URL' using errcode='22023';end if;
+ select * into q from crm.quote_drafts where id=p_quote for update;
+ if not found or q.status<>'approved' or q.valid_until<current_date then raise exception 'Approved valid quote required' using errcode='22023';end if;
+ if exists(select 1 from crm.quote_deliveries where quote_id=p_quote and status='prepared') then raise exception 'Retry the existing delivery' using errcode='22023';end if;
+ select primary_email into recipient from crm.people where id=q.person_id and status='active';
+ if recipient is null then raise exception 'Active recipient required' using errcode='22023';end if;
+ token:=substring(p_url from '[0-9a-f]{64}$');
+ insert into crm.quote_deliveries(id,quote_id,token_hash,recipient,subject,body) values(p_id,p_quote,encode(sha256(convert_to(token,'UTF8')),'hex'),recipient,'Dit tilbud fra Funktion360',q.title||E'\n\nLæs dit tilbud her:\n'||p_url||E'\n\nTilbuddet er gyldigt til '||q.valid_until::text||E'.\nDu kan acceptere tilbuddet med en kode sendt til din email. Betaling følger senere.') returning * into delivery;
+ insert into crm.audit_events(actor_staff_user_id,actor_auth_user_id,action,category,entity_type,entity_id,result,metadata) values(staff,auth.uid(),'PREPARE_QUOTE_MAIL','sales','quote_draft',p_quote,'success',jsonb_build_object('delivery_id',p_id));
+ return to_jsonb(delivery);
+end$$;
+commit;
