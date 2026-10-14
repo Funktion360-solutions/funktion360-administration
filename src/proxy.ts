@@ -2,7 +2,7 @@ import type { NextRequest } from "next/server";
 import { updateSession } from "@/lib/supabase/proxy";
 
 export async function proxy(request: NextRequest) {
-  if (["/api/webhooks/resend", "/api/webhooks/stripe", "/api/webhooks/payment-warnings"].includes(request.nextUrl.pathname)) return;
+  if (["/api/identity/memberships", "/api/webhooks/resend", "/api/webhooks/stripe", "/api/webhooks/payment-warnings"].includes(request.nextUrl.pathname)) return;
   return await updateSession(request);
 }
 
