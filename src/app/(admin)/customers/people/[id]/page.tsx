@@ -1,3 +1,4 @@
+import {StripeTestInvoices} from '@/components/customer-360/stripe-test-invoices';
 import {StripeTestSubscriptions} from '@/components/customer-360/stripe-test-subscriptions';
 import {PersonPayments} from '@/components/customer-360/person-payments';
 import {PersonProducts} from '@/components/customer-360/person-products';
@@ -343,7 +344,7 @@ export default async function PersonPage({
         )}
       </section>
 
-      <PersonPayments personId={person.id}/><StripeTestSubscriptions personId={person.id}/>
+      <PersonPayments personId={person.id}/><StripeTestSubscriptions personId={person.id}/><StripeTestInvoices personId={person.id}/>
       <PersonProducts personId={person.id} notice={product_notice}/>
       <PersonSupport personId={person.id}/>
       <section className="grid gap-4 md:grid-cols-2">
